@@ -14,27 +14,47 @@ type Cache struct {
 
 // Set is a thread-safe way to add new items to the map
 func (cache *Cache) Set(key string, data string) {
+	cache.SetWithTTL(key, data, cache.ttl)
+}
+
+// SetWithTTL allows adding items with a custom TTL
+func (cache *Cache) SetWithTTL(key string, data string, ttl time.Duration) {
 	cache.mutex.Lock()
+	defer cache.mutex.Unlock()
+
 	item := &Item{data: data}
-	item.touch(cache.ttl)
+	item.touch(ttl)
 	cache.items[key] = item
-	cache.mutex.Unlock()
+}
+
+// Delete allows items to be removed from the cache, irrespective of the TTL
+func (cache *Cache) Delete(key string) {
+	cache.mutex.Lock()
+	defer cache.mutex.Unlock()
+	delete(cache.items, key)
 }
 
 // Get is a thread-safe way to lookup items
 // Every lookup, also touches the item, hence extending it's life
-func (cache *Cache) Get(key string) (data string, found bool) {
+func (cache *Cache) Read(key string) (data string, found bool) {
+	return cache.Get(key, true)
+}
+
+// Get is useful for non-LRU caches. Like for DNS results
+func (cache *Cache) Get(key string, shouldTouch bool) (data string, found bool) {
 	cache.mutex.Lock()
+	defer cache.mutex.Unlock()
+
 	item, exists := cache.items[key]
 	if !exists || item.expired() {
 		data = ""
 		found = false
-	} else {
+	} else if shouldTouch {
 		item.touch(cache.ttl)
 		data = item.data
 		found = true
 	}
-	cache.mutex.Unlock()
+
 	return
 }
 
@@ -49,14 +69,16 @@ func (cache *Cache) Count() int {
 
 func (cache *Cache) cleanup() {
 	cache.mutex.Lock()
+	defer cache.mutex.Unlock()
+
 	for key, item := range cache.items {
 		if item.expired() {
 			delete(cache.items, key)
 		}
 	}
-	cache.mutex.Unlock()
 }
 
+// Run a timer that cleans up expired items every second
 func (cache *Cache) startCleanupTimer() {
 	duration := cache.ttl
 	if duration < time.Second {

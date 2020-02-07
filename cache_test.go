@@ -11,18 +11,35 @@ func TestGet(t *testing.T) {
 		items: map[string]*Item{},
 	}
 
-	data, exists := cache.Get("hello")
+	data, exists := cache.Read("hello")
 	if exists || data != "" {
 		t.Errorf("Expected empty cache to return no data")
 	}
 
 	cache.Set("hello", "world")
-	data, exists = cache.Get("hello")
+	data, exists = cache.Read("hello")
 	if !exists {
 		t.Errorf("Expected cache to return data for `hello`")
 	}
 	if data != "world" {
 		t.Errorf("Expected cache to return `world` for `hello`")
+	}
+}
+
+func TestDelete(t *testing.T) {
+	cache := &Cache{
+		ttl:   time.Second,
+		items: map[string]*Item{},
+	}
+	cache.Set("Test", "Delete")
+	_, exists := cache.Get("Test", true)
+	if !exists {
+		t.Errorf("Expected cache to return data for `Test`")
+	}
+	cache.Delete("Test")
+	_, exists = cache.Get("Test", true)
+	if exists {
+		t.Errorf("Expected cache to delete data for `Test`")
 	}
 }
 
