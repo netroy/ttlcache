@@ -1,0 +1,38 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/golang:1.13
+
+    environment:
+      GO111MODULE: "on"
+
+    # working_directory: /go/src/github.com/netroy/ttlcache
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+            - tools-pkg
+
+      - run: go get golang.org/x/lint/golint
+      - run: go get golang.org/x/tools/cmd/cover
+
+      - run:
+          name: Lint the code
+          command: golint .
+
+      - run:
+          name: Run the tests
+          command: go test -v -race -cover ./...
+
+      - save_cache:
+          key: tools-pkg
+          paths:
+            - "/go/pkg"
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - build
