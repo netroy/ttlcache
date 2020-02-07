@@ -34,14 +34,18 @@ func (cache *Cache) Delete(key string) {
 	delete(cache.items, key)
 }
 
-// Get is a thread-safe way to lookup items
-// Every lookup, also touches the item, hence extending it's life
+// Read is a thread-safe way to lookup items
+// Every lookup also touches the item, hence extending it's life
 func (cache *Cache) Read(key string) (data interface{}, found bool) {
-	return cache.Get(key, true)
+	return cache.get(key, true)
 }
 
 // Get is useful for non-LRU caches. Like for DNS results
-func (cache *Cache) Get(key string, shouldTouch bool) (data interface{}, found bool) {
+func (cache *Cache) Get(key string) (data interface{}, found bool) {
+	return cache.get(key, false)
+}
+
+func (cache *Cache) get(key string, shouldTouch bool) (data interface{}, found bool) {
 	cache.mutex.Lock()
 	defer cache.mutex.Unlock()
 
@@ -49,8 +53,10 @@ func (cache *Cache) Get(key string, shouldTouch bool) (data interface{}, found b
 	if !exists || item.expired() {
 		data = ""
 		found = false
-	} else if shouldTouch {
-		item.touch(cache.ttl)
+	} else {
+		if shouldTouch {
+			item.touch(cache.ttl)
+		}
 		data = item.data
 		found = true
 	}

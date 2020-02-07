@@ -32,12 +32,12 @@ func TestDelete(t *testing.T) {
 		items: map[string]*Item{},
 	}
 	cache.Set("Test", "Delete")
-	_, exists := cache.Get("Test", true)
+	_, exists := cache.Get("Test")
 	if !exists {
 		t.Errorf("Expected cache to return data for `Test`")
 	}
 	cache.Delete("Test")
-	_, exists = cache.Get("Test", true)
+	_, exists = cache.Get("Test")
 	if exists {
 		t.Errorf("Expected cache to delete data for `Test`")
 	}
