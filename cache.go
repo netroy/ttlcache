@@ -13,12 +13,12 @@ type Cache struct {
 }
 
 // Set is a thread-safe way to add new items to the map
-func (cache *Cache) Set(key string, data string) {
+func (cache *Cache) Set(key string, data interface{}) {
 	cache.SetWithTTL(key, data, cache.ttl)
 }
 
 // SetWithTTL allows adding items with a custom TTL
-func (cache *Cache) SetWithTTL(key string, data string, ttl time.Duration) {
+func (cache *Cache) SetWithTTL(key string, data interface{}, ttl time.Duration) {
 	cache.mutex.Lock()
 	defer cache.mutex.Unlock()
 
@@ -36,12 +36,12 @@ func (cache *Cache) Delete(key string) {
 
 // Get is a thread-safe way to lookup items
 // Every lookup, also touches the item, hence extending it's life
-func (cache *Cache) Read(key string) (data string, found bool) {
+func (cache *Cache) Read(key string) (data interface{}, found bool) {
 	return cache.Get(key, true)
 }
 
 // Get is useful for non-LRU caches. Like for DNS results
-func (cache *Cache) Get(key string, shouldTouch bool) (data string, found bool) {
+func (cache *Cache) Get(key string, shouldTouch bool) (data interface{}, found bool) {
 	cache.mutex.Lock()
 	defer cache.mutex.Unlock()
 
